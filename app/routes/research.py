@@ -1,17 +1,15 @@
+# routers/research.py
 from fastapi import APIRouter, HTTPException
-from motor.motor_asyncio import AsyncIOMotorClient
 import pandas as pd
 import os
+from db import db_admin1, db_admin2  # import both db connections
 
 router = APIRouter()
 
 # -------------------------
-# MongoDB connection
+# Choose which admin to use for this collection
 # -------------------------
-MONGO_URI = "mongodb+srv://suresharjun621_db_user:uTrU5S6Bv9CKPHDA@cluster0.vwumbxa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = AsyncIOMotorClient(MONGO_URI)
-db = client['nasa_db']
-collection = db['research']
+collection = db_admin2['research']  # or db_admin1['research']
 
 # -------------------------
 # Upload CSV once on startup
