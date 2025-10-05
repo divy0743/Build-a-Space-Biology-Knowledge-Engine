@@ -1,13 +1,25 @@
 # Mongo DB Connection + env config
 
+# config.py (or db.py)
 from dotenv import load_dotenv
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
 
-load_dotenv()  # loads .env file into environment variables
+# Load variables from .env
+load_dotenv()
 
-MONGO_URI = os.getenv("mongodb+srv://divyanshikhare37_db_user:3OnM4mWUoH02B9OL@cluster0.vwumbxa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0&authSource=admin")
-DB_NAME = os.getenv("nasa_db")
+DB_NAME = os.getenv("DB_NAME")
 
-client = AsyncIOMotorClient(MONGO_URI)
-db = client[DB_NAME]
+# -------------------------
+# Admin 1 connection
+# -------------------------
+MONGO_URI_ADMIN1 = os.getenv("MONGO_URI_ADMIN1")
+client_admin1 = AsyncIOMotorClient(MONGO_URI_ADMIN1)
+db_admin1 = client_admin1[DB_NAME]
+
+# -------------------------
+# Admin 2 connection
+# -------------------------
+MONGO_URI_ADMIN2 = os.getenv("MONGO_URI_ADMIN2")
+client_admin2 = AsyncIOMotorClient(MONGO_URI_ADMIN2)
+db_admin2 = client_admin2[DB_NAME]
