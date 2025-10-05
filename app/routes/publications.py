@@ -1,7 +1,5 @@
 # routers/publications.py
 from fastapi import APIRouter, HTTPException
-import pandas as pd
-import os
 from db import db_admin1, db_admin2  # import both db connections
 
 router = APIRouter()
@@ -12,42 +10,50 @@ router = APIRouter()
 collection = db_admin2['publications']  # or db_admin1['publications']
 
 # -------------------------
-# Upload CSV once on startup
-# -------------------------
-@router.on_event("startup")
-async def startup_db():
-    csv_file = "SB_publication_PMC.csv"
-    if os.path.exists(csv_file):
-        df = pd.read_csv(csv_file)
-        data = df.to_dict(orient="records")
-        count = await collection.count_documents({})
-        if count == 0:
-            await collection.insert_many(data)
-            # Create indexes
-            await collection.create_index("Title", unique=True)
-            await collection.create_index("Link")
-            print("Publications CSV uploaded and indexes created.")
-        else:
-            print("Publications collection already has data.")
-    else:
-        print("Publications CSV file not found!")
-
-# -------------------------
 # Routes
 # -------------------------
-@router.get("/")
-async def get_publications(limit: int = 10, skip: int = 0):
-    pubs = await collection.find().skip(skip).limit(limit).to_list(length=limit)
-    return pubs
 
+@router.on_event("startup")
+async def create_indexes_publications():
+    # Text index for search queries (only on Title, since that's the only text field)
+    await collection.create_index([("Title", "text")], name="publications_text_index")
+
+    # Unique index for Title
+    await collection.create_index("Title")
+    
+    # Index for Link (non-unique)
+    await collection.create_index("Link")
+    
+    print("Indexes for Publications collection created or ensured.")
+
+# Home endpoint
+@router.get("/")
+async def publication_home():
+    return {"message": "Welcome to the Publications API!"}
+
+# Get publication by title
 @router.get("/title/{title}")
 async def get_publication_by_title(title: str):
     pub = await collection.find_one({"Title": title})
     if not pub:
         raise HTTPException(status_code=404, detail="Publication not found")
+    pub["_id"] = str(pub["_id"])  # Convert ObjectId to string for JSON
     return pub
 
+# Search publications
 @router.get("/search")
 async def search_publications(query: str, limit: int = 10):
-    pubs = await collection.find({"$text": {"$search": query}}).limit(limit).to_list(length=limit)
+    cursor = collection.find({"$text": {"$search": query}}).limit(limit)
+    pubs = await cursor.to_list(length=limit)
+    for pub in pubs:
+        pub["_id"] = str(pub["_id"])  # Convert ObjectId to string for JSON
+    return pubs
+
+# Get limited publications list
+@router.get("/list")
+async def get_publications(limit: int = 10, skip: int = 0):
+    cursor = collection.find().skip(skip).limit(limit)
+    pubs = await cursor.to_list(length=limit)
+    for pub in pubs:
+        pub["_id"] = str(pub["_id"])  # Convert ObjectId to string
     return pubs
